@@ -18,7 +18,7 @@ jobs:
         run: npm install
 
       - name: Install BeamUp CLI
-        run: npm install -g stremio-beamup-cli
+        run: npm install stremio-beamup-cli
 
       - name: Deploy to BeamUp
-        run: beamup deploy
+        run: npx beamup deploy
