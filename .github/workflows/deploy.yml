@@ -12,28 +12,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup SSH Key
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          # A README szerint a szerver címe a.baby-beamup.club
-          ssh-keyscan -H a.baby-beamup.club >> ~/.ssh/known_hosts
+          ssh-keyscan -p 22 a.baby-beamup.club >> ~/.ssh/known_hosts
 
-      - name: Install BeamUp CLI
-        run: npm install -g beamup-cli
-
-      - name: Deploy Addon
+      - name: Git Push to BeamUp
         run: |
-          # Ahelyett, hogy interaktív login-nal szórakoznánk, 
-          # közvetlenül a CLI-t kényszerítjük a deploy-ra.
-          # A README szerint a BeamUp GitHub auth-ot használ.
-          # Megpróbáljuk a 'git' felhasználóval a push-t, ahogy a Dokku kéri.
+          # A -v kapcsoló az SSH-nak megmutatja mi történik
+          export GIT_SSH_COMMAND="ssh -v -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no"
           
-          export BEAMUP_HOST="a.baby-beamup.club"
-          # A titkod (BEAMUP_CONFIG) JSON formátumban van, a CLI ezt várja.
-          mkdir -p ~/.beamup
-          echo '${{ secrets.BEAMUP_CONFIG }}' > ~/.beamup/config.json
+          # Az addon ID-d a manifest.json-ban van, de itt az elérési útban kell szerepelnie.
+          # A BeamUp-nál ez általában: git@a.baby-beamup.club:[addon-id]
+          # Próbáljuk meg az addon nevével, amit a logokban láttunk:
+          git remote add beamup git@a.baby-beamup.club:stremio-scraper-addon || true
           
-          # Indítjuk a deploy-t. Ha kérdezné a hostot, a printf válaszol helyetted.
-          printf "a.baby-beamup.club\nlacizsolt-lgtm\n" | beamup deploy
+          echo "--- STARTING DEPLOY ---"
+          git push beamup main --force
