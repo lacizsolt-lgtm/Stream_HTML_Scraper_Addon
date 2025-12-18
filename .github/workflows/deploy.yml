@@ -23,8 +23,10 @@ jobs:
 
       - name: Write BeamUp config
         run: |
-          echo "${{ secrets.BEAMUP_CONFIG }}" > ~/.beamup-config.json
-        # Itt nem kell bonyolult printf, a sima echo is elég a json-nek
+          echo '${{ secrets.BEAMUP_CONFIG }}' > ~/.beamup-config.json
 
       - name: Deploy to BeamUp
         run: beamup deploy
+        env:
+          BEAMUP_HOST: a.baby-beamup.club
+          BEAMUP_USER: lacizsolt-lgtm
