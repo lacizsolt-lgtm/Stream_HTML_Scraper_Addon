@@ -18,17 +18,19 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           # Ez azért kell, hogy ne kérdezze meg, megbízol-e a szerverben
           known_hosts: 'placeholder'
+          name: id_ed25519 # Kifejezetten megadjuk a típust
 
       - name: Add BeamUp to Known Hosts
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H a.baby-beamup.club >> ~/.ssh/known_hosts
 
-      - name: Push to BeamUp
+        - name: Push to BeamUp
         run: |
+          # Beállítjuk a Git-et, hogy az ed25519 kulcsot használja
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"
           # A távoli URL felépítése: ssh://[felhasználónév]@[host]/[app-név]
           # A BeamUp-nál az app neve megegyezik a felhasználóneveddel
           # Fontos: a felhasználónév 'lacizsolt-lgtm' kell legyen
-
-          git remote add beamup ssh://lacizsolt-lgtm@a.baby-beamup.club/lacizsolt-lgtm
+          git remote add beamup ssh://lacizsolt-lgtm@a.baby-beamup.club/lacizsolt-lgtm || true
           git push beamup main --force
