@@ -26,4 +26,4 @@ async function resolve(vUrl) {
     return null;
 }
 
-module.exports = { resolve: scrapeVidea };
+module.exports = { resolve };
