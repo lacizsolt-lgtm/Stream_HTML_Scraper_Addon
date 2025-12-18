@@ -30,7 +30,7 @@ jobs:
           # Beállítjuk a Git-et, hogy az ed25519 kulcsot használja
           export GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"
           # A távoli URL felépítése: ssh://[felhasználónév]@[host]/[app-név]
-          # A BeamUp-nál az app neve megegyezik a felhasználóneveddel
+          # Az URL végén az app neve kell: stremio-scraper-addon
           # Fontos: a felhasználónév 'lacizsolt-lgtm' kell legyen
-          git remote add beamup ssh://lacizsolt-lgtm@a.baby-beamup.club/lacizsolt-lgtm || true
+          git remote add beamup ssh://lacizsolt-lgtm@a.baby-beamup.club/stremio-scraper-addon || true
           git push beamup main --force
