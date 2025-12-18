@@ -1,5 +1,5 @@
 const manifest = {
-  id: "community.stremio.scraper",
+  id: "netmozi.scraper",
   version: "1.0.0",
   name: "Stream Scraper Addon",
   description: "Stremio addon that scrapes stream links from websites for movies and series",
