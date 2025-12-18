@@ -9,28 +9,22 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          fetch-depth: 0 # Szükséges a teljes git history a push-hoz
+          node-version: '20'
 
-      - name: Install SSH Key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # Ez azért kell, hogy ne kérdezze meg, megbízol-e a szerverben
-          known_hosts: 'placeholder'
-          name: id_ed25519 # Kifejezetten megadjuk a típust
+      - name: Install dependencies
+        run: npm install
 
-      - name: Add BeamUp to Known Hosts
+      - name: Install BeamUp CLI
+        run: npm install -g beamup-cli
+
+      - name: Write BeamUp config
         run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H a.baby-beamup.club >> ~/.ssh/known_hosts
+          echo "${{ secrets.BEAMUP_CONFIG }}" > ~/.beamup-config.json
+        # Itt nem kell bonyolult printf, a sima echo is elég a json-nek
 
-      - name: Push to BeamUp
-        run: |
-          # Beállítjuk a Git-et, hogy az ed25519 kulcsot használja
-          export GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"
-          # A távoli URL felépítése: ssh://[felhasználónév]@[host]/[app-név]
-          # Az URL végén az app neve kell: stremio-scraper-addon
-          # Fontos: a felhasználónév 'lacizsolt-lgtm' kell legyen
-          git remote add beamup ssh://git@a.baby-beamup.club/stremio-scraper-addon || true
-          git push beamup main --force
+      - name: Deploy to BeamUp
+        run: beamup deploy
