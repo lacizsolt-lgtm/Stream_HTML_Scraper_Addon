@@ -12,19 +12,28 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install SSH Key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # A leírásod alapján a host: a.baby-beamup.club
-          known_hosts: 'placeholder' 
-
-      - name: Add Known Hosts
-        run: ssh-keyscan -H a.baby-beamup.club >> ~/.ssh/known_hosts
-
-      - name: Push to BeamUp
+      - name: Manual SSH Setup & Debug Info
         run: |
-          # A BeamUp-nál a felhasználó MINDIG 'git'
-          # Az URL végén az addon neve (slug) kell
-          git remote add beamup git@a.baby-beamup.club:stremio-scraper-addon
-          git push beamup main --force
+          mkdir -p ~/.ssh
+          # Privát kulcs kiírása
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          
+          echo "--- SSH KULCS ELLENŐRZÉSE ---"
+          # Megnézzük a kulcs ujjlenyomatát ( fingerprint), hogy össze tudd vetni a GitHubon lévővel
+          ssh-keygen -l -f ~/.ssh/id_ed25519
+          
+          echo "--- SZERVER ELÉRÉS ELLENŐRZÉSE ---"
+          ssh-keyscan -H a.baby-beamup.club >> ~/.ssh/known_hosts
+
+      - name: Push to BeamUp with VERBOSE DEBUG
+        run: |
+          # A -v (verbose) kapcsoló az SSH-nak megmutatja a teljes handshake-et
+          # Itt fog látszani, ha a szerver látja a kulcsot, de elutasítja
+          export GIT_SSH_COMMAND="ssh -v -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
+          
+          echo "--- GIT REMOTE BEÁLLÍTÁSA ---"
+          git remote add beamup git@a.baby-beamup.club:stremio-scraper-addon || true
+          
+          echo "--- PUSH INDÍTÁSA ---"
+          git push beamup main --force 2>&1
