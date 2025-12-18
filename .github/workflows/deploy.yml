@@ -8,31 +8,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
         with:
-          node-version: '20'
-    
-      - name: Cache node modules
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-      
-      - name: Install dependencies
-        run: npm install
+          fetch-depth: 0 
 
-      - name: Install BeamUp CLI
-        run: npm install -g beamup-cli
-      
-      - name: Write BeamUp config
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: 'placeholder' 
+
+      - name: Add BeamUp to Known Hosts
+        run: ssh-keyscan -H a.baby-beamup.club >> ~/.ssh/known_hosts
+
+      - name: Push to BeamUp
         run: |
-          printf "%s" "${BEAMUP_CONFIG}" > ~/.beamup-config.json
-        env:
-          BEAMUP_CONFIG: ${{ secrets.BEAMUP_CONFIG }}
-        
-      - name: Deploy to BeamUp
-        run: beamup deploy
+          # A távoli URL: ssh://[user]@[host]/[app-name]
+          git remote add beamup ssh://lacizsolt-lgtm@a.baby-beamup.club/lacizsolt-lgtm
+          git push beamup main --force
