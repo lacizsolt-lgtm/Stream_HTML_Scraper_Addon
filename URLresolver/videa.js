@@ -8,18 +8,23 @@ async function resolve(vUrl) {
         const mediaId = idMatch[1];
         const host = vUrl.includes('videakid.hu') ? 'videakid.hu' : 'videa.hu';
 
-        // Lekérjük a videó oldalát
+        // Közvetlenül az info oldalról kérjük le, ez stabilabb
         const response = await axios.get(`https://${host}/videok/${mediaId}`, {
             headers: { 'User-Agent': 'Mozilla/5.0' }
         });
 
-        // Megkeressük a video_source-t (ahogy a python-ban volt)
-        const linkMatch = response.data.match(/video_source\s*name="([^"]+)"[^>]+>([^<]+)/);
+        // 1. Próbálkozás: video_source kinyerése
+        const linkMatch = response.data.match(/video_source\s*name="([^"]+)"[^>]+>([^<]+)/) || 
+                          response.data.match(/<source\s+src="([^"]+)"/);
+        
         if (linkMatch) {
-            let streamUrl = linkMatch[2];
+            let streamUrl = linkMatch[2] || linkMatch[1];
             // Ha a link //-vel kezdődik, rakunk elé https:-t
-            return streamUrl.startsWith('//') ? 'https:' + streamUrl : streamUrl;
+            if (streamUrl.startsWith('//')) streamUrl = 'https:' + streamUrl;
+            console.log("Sikeres feloldás:", streamUrl); // Ez meg fog jelenni a logban!
+            return streamUrl;
         }
+
     } catch (e) {
         console.error(`Videa feloldási hiba (${vUrl}):`, e.message);
     }
