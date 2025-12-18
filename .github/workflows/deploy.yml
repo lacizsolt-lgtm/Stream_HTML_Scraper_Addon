@@ -32,5 +32,5 @@ jobs:
           # A távoli URL felépítése: ssh://[felhasználónév]@[host]/[app-név]
           # Az URL végén az app neve kell: stremio-scraper-addon
           # Fontos: a felhasználónév 'lacizsolt-lgtm' kell legyen
-          git remote add beamup ssh://lacizsolt-lgtm@a.baby-beamup.club/stremio-scraper-addon || true
+          git remote add beamup ssh://git@a.baby-beamup.club/stremio-scraper-addon || true
           git push beamup main --force
