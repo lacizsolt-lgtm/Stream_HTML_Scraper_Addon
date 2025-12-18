@@ -21,24 +21,29 @@ jobs:
       - name: Install BeamUp CLI
         run: npm install -g beamup-cli
 
-      - name: Write BeamUp config
+      - name: Configure and Debug Environment
         run: |
-          # Létrehozzuk a config könyvtárat, ha kell, és beleírjuk a secret-et
-          mkdir -p ~/.config
-          echo '${{ secrets.BEAMUP_CONFIG }}' > ~/.beamup-config.json
-          # Biztonság kedvéért a gyökérbe is, ahogy eddig
-          cp ~/.beamup-config.json ~/beamup-config.json
-
-      - name: Deploy to BeamUp (Debug Mode)
-        run: |
-          # Az 'yes' parancs folyamatosan 'y'-t vagy a megadott szöveget küldi,
-          # így ha a CLI kérdez valamit (Host, felülírás, stb.), nem áll meg.
-          # A --verbose kiíratja a hálózati és belső hibákat is.
-          yes "a.baby-beamup.club" | beamup deploy --host a.baby-beamup.club --verbose || true
+          # Létrehozzuk a mappát több lehetséges helyen is (biztos ami biztos)
+          mkdir -p ~/.beamup
+          mkdir -p ~/.config/beamup
           
-          # Ha még mindig csendben leállna, megnézzük a CLI által generált esetleges logokat
-          if [ -f .beamup-log ]; then cat .beamup-log; fi
+          # Beírjuk a konfigot
+          echo '${{ secrets.BEAMUP_CONFIG }}' > ~/.beamup/config.json
+          echo '${{ secrets.BEAMUP_CONFIG }}' > ~/.beamup-config.json
+          
+          # DEBUG: Megnézzük a fájlok létezését és méretét (tartalom nélkül!)
+          echo "--- DEBUG: Konfigurációs fájlok ellenőrzése ---"
+          ls -la ~/.beamup/config.json
+          ls -la ~/.beamup-config.json
+          
+      - name: Deploy to BeamUp (With Force Response)
+        run: |
+          echo "--- DEBUG: Deploy indítása ---"
+          # A 'printf' segítségével sorrendben "beetetjük" a válaszokat, ha a CLI kérdezné:
+          # 1. Host neve
+          # 2. Felhasználónév
+          # A '2>&1' az összes hibaüzenetet a normál kimenetre tereli, hogy lássuk a logban.
+          printf "a.baby-beamup.club\nlacizsolt-lgtm\n" | beamup deploy 2>&1
         env:
           BEAMUP_HOST: a.baby-beamup.club
           BEAMUP_USER: lacizsolt-lgtm
-          NODE_DEBUG: beamup-cli # Bekapcsolja a Node.js belső debug módot a CLI-hez
