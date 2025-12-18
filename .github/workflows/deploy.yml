@@ -9,41 +9,22 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          fetch-depth: 0
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # A leírásod alapján a host: a.baby-beamup.club
+          known_hosts: 'placeholder' 
 
-      - name: Install BeamUp CLI
-        run: npm install -g beamup-cli
+      - name: Add Known Hosts
+        run: ssh-keyscan -H a.baby-beamup.club >> ~/.ssh/known_hosts
 
-      - name: Configure and Debug Environment
+      - name: Push to BeamUp
         run: |
-          # Létrehozzuk a mappát több lehetséges helyen is (biztos ami biztos)
-          mkdir -p ~/.beamup
-          mkdir -p ~/.config/beamup
-          
-          # Beírjuk a konfigot
-          echo '${{ secrets.BEAMUP_CONFIG }}' > ~/.beamup/config.json
-          echo '${{ secrets.BEAMUP_CONFIG }}' > ~/.beamup-config.json
-          
-          # DEBUG: Megnézzük a fájlok létezését és méretét (tartalom nélkül!)
-          echo "--- DEBUG: Konfigurációs fájlok ellenőrzése ---"
-          ls -la ~/.beamup/config.json
-          ls -la ~/.beamup-config.json
-          
-      - name: Deploy to BeamUp (With Force Response)
-        run: |
-          echo "--- DEBUG: Deploy indítása ---"
-          # A 'printf' segítségével sorrendben "beetetjük" a válaszokat, ha a CLI kérdezné:
-          # 1. Host neve
-          # 2. Felhasználónév
-          # A '2>&1' az összes hibaüzenetet a normál kimenetre tereli, hogy lássuk a logban.
-          printf "a.baby-beamup.club\nlacizsolt-lgtm\n" | beamup deploy 2>&1
-        env:
-          BEAMUP_HOST: a.baby-beamup.club
-          BEAMUP_USER: lacizsolt-lgtm
+          # A BeamUp-nál a felhasználó MINDIG 'git'
+          # Az URL végén az addon neve (slug) kell
+          git remote add beamup git@a.baby-beamup.club:stremio-scraper-addon
+          git push beamup main --force
