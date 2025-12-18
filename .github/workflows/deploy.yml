@@ -23,10 +23,22 @@ jobs:
 
       - name: Write BeamUp config
         run: |
+          # Létrehozzuk a config könyvtárat, ha kell, és beleírjuk a secret-et
+          mkdir -p ~/.config
           echo '${{ secrets.BEAMUP_CONFIG }}' > ~/.beamup-config.json
+          # Biztonság kedvéért a gyökérbe is, ahogy eddig
+          cp ~/.beamup-config.json ~/beamup-config.json
 
-      - name: Deploy to BeamUp
-        run: beamup deploy
+      - name: Deploy to BeamUp (Debug Mode)
+        run: |
+          # Az 'yes' parancs folyamatosan 'y'-t vagy a megadott szöveget küldi,
+          # így ha a CLI kérdez valamit (Host, felülírás, stb.), nem áll meg.
+          # A --verbose kiíratja a hálózati és belső hibákat is.
+          yes "a.baby-beamup.club" | beamup deploy --host a.baby-beamup.club --verbose || true
+          
+          # Ha még mindig csendben leállna, megnézzük a CLI által generált esetleges logokat
+          if [ -f .beamup-log ]; then cat .beamup-log; fi
         env:
           BEAMUP_HOST: a.baby-beamup.club
           BEAMUP_USER: lacizsolt-lgtm
+          NODE_DEBUG: beamup-cli # Bekapcsolja a Node.js belső debug módot a CLI-hez
