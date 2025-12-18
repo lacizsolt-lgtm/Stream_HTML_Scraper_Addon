@@ -1,3 +1,4 @@
+const { universalResolver } = require("./URLresolver"); // Beimportáljuk a kaput
 const axios = require("axios");
 const cheerio = require("cheerio");
 
@@ -30,66 +31,31 @@ async function scrapeStreamLinks(imdbId, type, season, episode) {
 
     const streams = [];
 
-    $("a.details_links_btn").each((index, element) => {
+const elements = $("a.details_links_btn").toArray();
+
+    for (const element of elements) {
       const streamUrl = $(element).attr("href");
-      
-      if (streamUrl) {
-        const row = $(element).closest("tr");
-        const table = $(element).closest("table.table-responsive");
+      if (!streamUrl) continue;
+
+      try {
+        // Megpróbáljuk feloldani a linket (Videa, Mixdrop, stb.)
+        const resolvedUrl = await universalResolver.resolve(streamUrl);
         
-        let language = "";
-        let quality = "";
-        let host = "";
-        
-        if (row.length > 0) {
-          const cells = row.find("td");
-          cells.each((i, cell) => {
-            const text = $(cell).text().trim();
-            const cellClass = $(cell).attr("class") || "";
-            
-            if (cellClass.includes("language") || i === 0) {
-              language = text;
-            } else if (cellClass.includes("quality") || i === 1) {
-              quality = text;
-            } else if (cellClass.includes("host") || i === 2) {
-              host = text;
+        if (resolvedUrl) {
+          const hostName = streamUrl.split('/')[2] || "Stream";
+          streams.push({
+            url: resolvedUrl,
+            name: `NetMozi | ${hostName}`,
+            title: `Eredeti forrás: ${hostName} (Feloldva)`,
+            behaviorHints: {
+              notInterchangeable: true
             }
           });
         }
-
-        if (table.length > 0 && !language && !quality && !host) {
-          const headers = table.find("th");
-          const headerMap = {};
-          headers.each((i, header) => {
-            const headerText = $(header).text().toLowerCase().trim();
-            headerMap[i] = headerText;
-          });
-          
-          const cells = row.find("td");
-          cells.each((i, cell) => {
-            const text = $(cell).text().trim();
-            const headerType = headerMap[i];
-            
-            if (headerType && headerType.includes("lang")) {
-              language = text;
-            } else if (headerType && (headerType.includes("quality") || headerType.includes("qual"))) {
-              quality = text;
-            } else if (headerType && headerType.includes("host")) {
-              host = text;
-            }
-          });
-        }
-
-        streams.push({
-          url: streamUrl,
-          name: `${host || "Stream"} ${quality || ""}`.trim(),
-          title: `${language ? `[${language}] ` : ""}${quality || "Unknown Quality"} - ${host || "Unknown Host"}`,
-          language: language || "Unknown",
-          quality: quality || "Unknown",
-          host: host || "Unknown"
-        });
+      } catch (err) {
+        console.error(`Hiba a feloldáskor (${streamUrl}):`, err.message);
       }
-    });
+    }
 
     console.log(`Found ${streams.length} streams`);
     return streams;
