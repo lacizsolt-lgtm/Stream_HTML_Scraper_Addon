@@ -1,4 +1,4 @@
-const { universalResolver } = require("./URLresolver"); // Beimportáljuk a kaput
+const { universalResolver } = require("../URLresolver"); // Beimportáljuk a kaput
 const axios = require("axios");
 const cheerio = require("cheerio");
 
