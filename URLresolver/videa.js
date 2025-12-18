@@ -2,32 +2,41 @@ const axios = require('axios');
 
 async function resolve(vUrl) {
     try {
-        // Regex a mediaId kinyeréséhez (a videa.py mintája alapján)
         const idMatch = vUrl.match(/(?:v=|v\/|videok\/)(?:.*-|)([0-9a-zA-Z]+)/);
         if (!idMatch) return null;
         const mediaId = idMatch[1];
-        const host = vUrl.includes('videakid.hu') ? 'videakid.hu' : 'videa.hu';
-
-        // Közvetlenül az info oldalról kérjük le, ez stabilabb
-        const response = await axios.get(`https://${host}/videok/${mediaId}`, {
-            headers: { 'User-Agent': 'Mozilla/5.0' }
+        
+        // Közvetlenül a Videa belső API-ját célozzuk meg (vagy az embed oldalt)
+        const response = await axios.get(`https://videa.hu/videok/${mediaId}`, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
         });
 
-        // 1. Próbálkozás: video_source kinyerése
-        const linkMatch = response.data.match(/video_source\s*name="([^"]+)"[^>]+>([^<]+)/) || 
-                          response.data.match(/<source\s+src="([^"]+)"/);
-        
-        if (linkMatch) {
-            let streamUrl = linkMatch[2] || linkMatch[1];
-            // Ha a link //-vel kezdődik, rakunk elé https:-t
+        // Kikeressük az összes lehetséges forrást (több minőség is lehet benne)
+        const sourceMatches = response.data.matchAll(/_source\s*:\s*["']([^"']+)["']/g);
+        const sources = Array.from(sourceMatches, m => m[1]);
+
+        // Ha van találat, kivesszük a legjobbat (vagy az elsőt)
+        if (sources.length > 0) {
+            let streamUrl = sources[sources.length - 1]; // Általában az utolsó a legjobb minőség
             if (streamUrl.startsWith('//')) streamUrl = 'https:' + streamUrl;
-            console.log("Sikeres feloldás:", streamUrl); // Ez meg fog jelenni a logban!
+            
+            console.log("!!! SIKERES FELOLDÁS !!! ->", streamUrl);
+            return streamUrl;
+        }
+
+        // B terv: Ha az előző nem talált semmit, nézzük meg a meta tageket
+        const metaMatch = response.data.match(/<source\s+src="([^"]+)"/i);
+        if (metaMatch) {
+            let streamUrl = metaMatch[1];
+            if (streamUrl.startsWith('//')) streamUrl = 'https:' + streamUrl;
+            console.log("!!! SIKERES FELOLDÁS (B terv) !!! ->", streamUrl);
             return streamUrl;
         }
 
     } catch (e) {
         console.error(`Videa feloldási hiba (${vUrl}):`, e.message);
     }
+    console.log("Videa feloldás: Nem található forrás ezen az oldalon.");
     return null;
 }
 
