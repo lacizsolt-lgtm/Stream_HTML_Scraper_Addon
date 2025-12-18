@@ -21,7 +21,7 @@ jobs:
         run: npm install -g beamup-cli
 
       - name: Deploy to BeamUp
-         env:
+        env:
           BEAMUP_HOST: a.baby-beamup.club
           BEAMUP_USER: lacizsolt-lgtm
         run: beamup deploy
