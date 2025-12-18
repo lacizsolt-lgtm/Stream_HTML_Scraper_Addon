@@ -7,8 +7,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -18,7 +17,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Install BeamUp CLI
+        run: npm install -g beamup-cli
+
+      - name: Configure BeamUp
+        run: beamup config set host a.baby-beamup.club && beamup config set user lacizsolt-lgtm
+
       - name: Deploy to BeamUp
-        uses: beamup/action@v1
-        with:
-          project: Stream_HTML_Scraper_Addon
+        run: beamup deploy
