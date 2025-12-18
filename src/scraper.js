@@ -25,7 +25,7 @@ async function scrapeStreamLinks(imdbId, type, season, episode) {
 
     const streams = [];
     for (const link of movie.links) {
-      const resolvedUrl = await universalResolver(link.url);
+      const resolvedUrl = await universalResolver.resolve(link.url);
       if (resolvedUrl) {
         streams.push({
           url: resolvedUrl,
