@@ -1,16 +1,21 @@
-const videaResolve = require('./videa');
+const videa = require('./videa');
 
-async function universalResolver(url) {
-    if (!url) return null;
+const universalResolver = {
+    resolve: async (url) => {
+        if (!url) return null;
 
-    if (url.includes('videa.hu') || url.includes('videakid.hu')) {
-        return await videaResolve(url);
-    }
-    
+        // Ellenőrizzük, hogy Videa link-e
+        if (url.includes('videa.hu') || url.includes('videakid.hu')) {
+            // Itt a videa.js-ben lévő resolve függvényt hívjuk meg
+            return await videa.resolve(url);
+        }
+        
     // Ide jöhetnek majd a többiek:
     // if (url.includes('mixdrop.co')) return await mixdropResolve(url);
+        
+        // Ha nem ismerjük, visszaadjuk az eredetit (vagy null-t)
+        return url;
+    }
+};
 
-    return url; // Ha nem ismerjük, visszaadjuk az eredetit
-}
-
-module.exports = { universalResolver };
+module.exports = { resolve: scrapeVidea };
