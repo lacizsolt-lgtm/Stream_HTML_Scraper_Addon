@@ -29,9 +29,8 @@ jobs:
         run: npm install -g beamup-cli
 
       - name: Write BeamUp config
-        run: echo "$BEAMUP_CONFIG" > ~/.beamup-config.json
-        env:
-          BEAMUP_CONFIG: ${{ secrets.BEAMUP_CONFIG }}
+        run: |
+          echo '${{ secrets.BEAMUP_CONFIG }}' > ~/.beamup-config.json
 
       - name: Deploy to BeamUp
         run: beamup deploy
