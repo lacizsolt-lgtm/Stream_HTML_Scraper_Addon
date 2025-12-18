@@ -12,28 +12,28 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Manual SSH Setup & Debug Info
+      - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
-          # Privát kulcs kiírása
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          
-          echo "--- SSH KULCS ELLENŐRZÉSE ---"
-          # Megnézzük a kulcs ujjlenyomatát ( fingerprint), hogy össze tudd vetni a GitHubon lévővel
-          ssh-keygen -l -f ~/.ssh/id_ed25519
-          
-          echo "--- SZERVER ELÉRÉS ELLENŐRZÉSE ---"
+          # A README szerint a szerver címe a.baby-beamup.club
           ssh-keyscan -H a.baby-beamup.club >> ~/.ssh/known_hosts
 
-      - name: Push to BeamUp with VERBOSE DEBUG
+      - name: Install BeamUp CLI
+        run: npm install -g beamup-cli
+
+      - name: Deploy Addon
         run: |
-          # A -v (verbose) kapcsoló az SSH-nak megmutatja a teljes handshake-et
-          # Itt fog látszani, ha a szerver látja a kulcsot, de elutasítja
-          export GIT_SSH_COMMAND="ssh -v -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
+          # Ahelyett, hogy interaktív login-nal szórakoznánk, 
+          # közvetlenül a CLI-t kényszerítjük a deploy-ra.
+          # A README szerint a BeamUp GitHub auth-ot használ.
+          # Megpróbáljuk a 'git' felhasználóval a push-t, ahogy a Dokku kéri.
           
-          echo "--- GIT REMOTE BEÁLLÍTÁSA ---"
-          git remote add beamup git@a.baby-beamup.club:stremio-scraper-addon || true
+          export BEAMUP_HOST="a.baby-beamup.club"
+          # A titkod (BEAMUP_CONFIG) JSON formátumban van, a CLI ezt várja.
+          mkdir -p ~/.beamup
+          echo '${{ secrets.BEAMUP_CONFIG }}' > ~/.beamup/config.json
           
-          echo "--- PUSH INDÍTÁSA ---"
-          git push beamup main --force 2>&1
+          # Indítjuk a deploy-t. Ha kérdezné a hostot, a printf válaszol helyetted.
+          printf "a.baby-beamup.club\nlacizsolt-lgtm\n" | beamup deploy
