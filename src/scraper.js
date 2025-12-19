@@ -1,62 +1,54 @@
-const fs = require("fs");
-const path = require("path");
-const axios = require("axios");
-const cheerio = require("cheerio");
-const { universalResolver } = require("../URLresolver");
+const { createClient } = require('@supabase/supabase-js');
 
-const BASE_URL = process.env.SCRAPER_BASE_URL || "https://netmozi.com";
+// A Supabase URL és Key a környezeti változókból jön (Render.com-on állítsd be!)
+const supabase = createClient(
+  process.env.SUPABASE_URL, 
+  process.env.SUPABASE_KEY
+);
 
-async function scrapeStreamLinks(imdbId, type, season, episode) {
+async function scrapeStreamLinks(imdbId, type) {
   try {
-    const dbPath = path.join(__dirname, "..", "database", "master_db.json");
-    
-    if (!fs.existsSync(dbPath)) {
-      console.error("Adatbázis fájl nem található:", dbPath);
+    console.log(`MDBase lekérdezés indítása: ${imdbId}`);
+
+    // Adatok lekérése a DB-ből: összekapcsoljuk a films és links táblát
+    const { data, error } = await supabase
+      .from('links')
+      .select('*')
+      .eq('film_id', imdbId)
+      .eq('status', 'active');
+
+    if (error) {
+      console.error('Supabase hiba:', error.message);
       return [];
     }
 
-    const db = JSON.parse(fs.readFileSync(dbPath, "utf8"));
-    const movie = db.movies.find(m => m.imdbId === imdbId);
-    
-    if (!movie) {
-      console.log(`Nincs rekord az MDBase-ben: ${imdbId}`);
+    if (!data || data.length === 0) {
+      console.log(`Nincs találat az MDBase-ben: ${imdbId}`);
       return [];
     }
 
-    const streams = [];
-    for (const link of movie.links) {
-      const resolvedUrl = await universalResolver.resolve(link.url);
-      if (resolvedUrl) {
-        streams.push({
-          url: resolvedUrl,
-          name: `NetMozi | ${link.host}`,
-          title: `🎬 ${link.language} ${link.type}\n💎 ${link.quality}`,
-          language: link.language,
-          quality: link.quality,
-          host: link.host
-        });
+    // A te eredeti stream formátumodra alakítjuk az eredményt
+    return data.map(link => ({
+      url: link.url, 
+      name: `NetMozi | ${link.host || 'Ismeretlen'}`,
+      title: `🎬 ${link.language === 'hu' ? 'Magyar' : link.language} | 💎 ${link.quality}\n🔗 Forrás: ${link.provider_id}`,
+      behaviorHints: {
+        bingeGroup: `mdbase-${link.provider_id}-${link.quality}`
       }
-    }
-    return streams;
+    }));
+
   } catch (error) {
-    console.error(`Hiba az MDBase olvasásakor:`, error.message);
+    console.error('Váratlan hiba az MDBase olvasásakor:', error.message);
     return [];
   }
 }
 
+// A Stremio addonnak szüksége van a formázóra is
 function formatStreamsForStremio(streams) {
-  return streams.map((stream, index) => ({
-    name: stream.name,
-    title: stream.title,
-    url: stream.url,
-    behaviorHints: {
-      bingeGroup: `scraper-${stream.host}-${stream.quality}`
-    }
-  }));
+  return streams; // A fenti map már a megfelelő formátumban adja vissza
 }
 
 module.exports = {
   scrapeStreamLinks,
-  formatStreamsForStremio,
-  BASE_URL
+  formatStreamsForStremio
 };
